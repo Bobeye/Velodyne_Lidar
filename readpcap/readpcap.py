@@ -5,6 +5,10 @@ import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+import dataanalysis
+# import pcl
+# import pclapps as pcla
+
 
 
 
@@ -175,6 +179,26 @@ def Decode_Data_Block(FDDB_data_block):	# decode 1200-byte data block + 4-byte t
 	decoded_data_block = [azimuth] + location
 	return decoded_data_block
 
+def Decode_Pcap(FDP_pcap, FDP_sample_size, Mode):	# decode parsed pcap file with pre-defined number of packets
+	udp_list = FDP_pcap
+	sample_size = FDP_sample_size
+	raw_decoded_udp = list(range(sample_size))
+	raw_decoded_udp_data = list(range(sample_size))
+	for i in xrange(sample_size):
+		raw_decoded_udp[i] = Decode_UDP(udp_list[i])[4]
+		raw_decoded_udp_data[i] = Decode_Data_Packet(raw_decoded_udp[i],Mode)
+	# basic filter for irrelevant points
+	decoded_data_list = [0]
+	for i in xrange(sample_size):
+		for j in range(len(raw_decoded_udp_data[i])):
+			if raw_decoded_udp_data[i][j][7] <= 100 or raw_decoded_udp_data[i][j][7] >= 150000 or raw_decoded_udp_data[i][j][6] >= 240	or raw_decoded_udp_data[i][j][6] <= 15:
+				pass
+			else:
+				decoded_data_list.append(raw_decoded_udp_data[i][j])
+	decoded_data_list.pop(0)
+
+	return decoded_data_list 	
+
 def Read_Pcap(FRP_pcap, Mode):
 	pcap_file = open(FRP_pcap)				# import the .pcap file
 	pcap = dpkt.pcap.Reader(pcap_file)		# read the .pcap file using dpkt
@@ -203,39 +227,53 @@ def Read_Pcap(FRP_pcap, Mode):
 
 	print("number of udp packets: ", udp_num)
 
-	# plot raw data
-	sample_size = 50 	# number of packets for each sample plot
-	raw_decoded_udp = list(range(sample_size))
-	raw_decoded_udp_data = list(range(sample_size))
-	for i in xrange(sample_size):
-		raw_decoded_udp[i] = Decode_UDP(udp_list[i])[4]
-		raw_decoded_udp_data[i] = Decode_Data_Packet(raw_decoded_udp[i],Mode)
-	x_array = list(range(256))
-	y_array = list(range(256))
-	z_array = list(range(256))
-	c_array = list(range(256))
-	for i in range(256):
-		x_array[i] = []
-		y_array[i] = []
-		z_array[i] = []	
-		c_array[i] = (0,0,0)
-	for i in xrange(sample_size):
-		for j in xrange(len(raw_decoded_udp_data[i])):
-			if raw_decoded_udp_data[i][j][7] <= 1000 or raw_decoded_udp_data[i][j][6] >= 240 or raw_decoded_udp_data[i][j][6] <= 15:
-				pass
-			else:
-				ref = raw_decoded_udp_data[i][j][6]
-				x_array[ref] = x_array[ref] + [raw_decoded_udp_data[i][j][3]]
-				y_array[ref] = y_array[ref] + [raw_decoded_udp_data[i][j][4]]
-				z_array[ref] = z_array[ref] + [raw_decoded_udp_data[i][j][5]]
-				c_array[ref] = (1-ref/256.0,0,ref/256.0)
-	sample_fig = plt.figure()
-	sample_plot = sample_fig.gca(projection = '3d')
-	print c_array
-	for i in xrange(256):
-		if len(x_array) > 1:
-			sample_plot.plot(x_array[i],y_array[i],z_array[i],'.', c=c_array[i])
-	plt.show()
+	# decode chosen number of packets
+
+
+	sample_data = Decode_Pcap(udp_list,100,Mode)
+	
+	print("number of sample data points: ", len(sample_data))
+
+	da_sample = dataanalysis.Plane_Segmentation(sample_data)
+	da_sample_ground = da_sample.Build_Point_Voxel()
+
+
+
+
+
+	# # plot raw data
+	# sample_size = 50 	# number of packets for each sample plot
+	# raw_decoded_udp = list(range(sample_size))
+	# raw_decoded_udp_data = list(range(sample_size))
+	# for i in xrange(sample_size):
+	# 	raw_decoded_udp[i] = Decode_UDP(udp_list[i])[4]
+	# 	raw_decoded_udp_data[i] = Decode_Data_Packet(raw_decoded_udp[i],Mode)
+	# x_array = list(range(256))
+	# y_array = list(range(256))
+	# z_array = list(range(256))
+	# c_array = list(range(256))
+	# for i in range(256):
+	# 	x_array[i] = []
+	# 	y_array[i] = []
+	# 	z_array[i] = []	
+	# 	c_array[i] = (0,0,0)
+	# for i in xrange(sample_size):
+	# 	for j in xrange(len(raw_decoded_udp_data[i])):
+	# 		if raw_decoded_udp_data[i][j][7] <= 1000 or raw_decoded_udp_data[i][j][6] >= 240 or raw_decoded_udp_data[i][j][6] <= 15:
+	# 			pass
+	# 		else:
+	# 			ref = raw_decoded_udp_data[i][j][6]
+	# 			x_array[ref] = x_array[ref] + [raw_decoded_udp_data[i][j][3]]
+	# 			y_array[ref] = y_array[ref] + [raw_decoded_udp_data[i][j][4]]
+	# 			z_array[ref] = z_array[ref] + [raw_decoded_udp_data[i][j][5]]
+	# 			c_array[ref] = (1-ref/256.0,0,ref/256.0)
+	# sample_fig = plt.figure()
+	# sample_plot = sample_fig.gca(projection = '3d')
+	# print c_array
+	# for i in xrange(256):
+	# 	if len(x_array) > 1:
+	# 		sample_plot.plot(x_array[i],y_array[i],z_array[i],'.', c=c_array[i])
+	# plt.show()
 
 
 
@@ -336,7 +374,7 @@ def Read_Pcap(FRP_pcap, Mode):
 
 if __name__=='__main__':
 
-	Read_Pcap('02-Marrysville-2016-09-13-14-18-15_Velodyne-VLP-16-Data.pcap', "Dual")
+	Read_Pcap('/home/bowen/Desktop/lidar/VELODYNE/VLP-16 Sample Data/2015-07-23-14-59-16_Velodyne-VLP-16-Data_Downtown 20Hz Dual.pcap', "Dual")
 
 	# f = open('02-Marrysville-2016-09-13-14-18-15_Velodyne-VLP-16-Data.pcap')
 	# # f = open('2015-07-23-14-37-22_Velodyne-VLP-16-Data_Downtown 10Hz Single.pcap')
