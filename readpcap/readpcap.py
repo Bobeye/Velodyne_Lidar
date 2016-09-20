@@ -20,15 +20,8 @@ def Reflectivity_to_RGBHex(FRR_reflectivity):
 	return rgb
 
 def append_hex(a, b):
-	sizeof_b = 0
-	# get size of b in bits
-	while((b >> sizeof_b) > 0):
-		sizeof_b += 1
-	# align answer to nearest 4 bits (hex digit)
-	sizeof_b += sizeof_b % 4
-
-	return (a << sizeof_b) | b
-
+	return (a << 8) | b
+	
 def append_time_hex(a,b):
 	return (a << 8) | b
 
@@ -84,6 +77,7 @@ def Decode_Data_Packet(FDDP_data,Mode):	# decode 1248-byte data packet from UDP
 		decoded_data_blocks = list(range(12))
 		for i in range(12):
 			decoded_data_blocks[i] = Decode_Data_Block(data_blocks[i])
+		
 		# build Azimuth list
 		Azimuth_list = list(range(12))
 		for i in range(12):
@@ -119,6 +113,7 @@ def Decode_Data_Packet(FDDP_data,Mode):	# decode 1248-byte data packet from UDP
 		for i in range(24):
 			if Azimuth_list_final[i] > 360:
 				Azimuth_list_final[i] = Azimuth_list_final[i] % 360
+		
 		# build data points without time stamp
 		# [block id (0-11),
 		#  firing sequence (1-2),
@@ -191,7 +186,7 @@ def Decode_Pcap(FDP_pcap, FDP_sample_size, Mode):	# decode parsed pcap file with
 	decoded_data_list = [0]
 	for i in xrange(sample_size):
 		for j in range(len(raw_decoded_udp_data[i])):
-			if raw_decoded_udp_data[i][j][7] <= 100 or raw_decoded_udp_data[i][j][7] >= 150000 or raw_decoded_udp_data[i][j][6] >= 240	or raw_decoded_udp_data[i][j][6] <= 15:
+			if raw_decoded_udp_data[i][j][7] <= 100 or raw_decoded_udp_data[i][j][7] >= 100000:
 				pass
 			else:
 				decoded_data_list.append(raw_decoded_udp_data[i][j])
@@ -234,8 +229,12 @@ def Read_Pcap(FRP_pcap, Mode):
 	
 	print("number of sample data points: ", len(sample_data))
 
+
+
 	da_sample = dataanalysis.Plane_Segmentation(sample_data)
-	da_sample_ground = da_sample.Build_Point_Voxel()
+	da_ground = da_sample.Ground_Classification()
+
+	# da_sample_ground = da_sample.Build_Point_Voxel()
 
 
 
@@ -374,7 +373,16 @@ def Read_Pcap(FRP_pcap, Mode):
 
 if __name__=='__main__':
 
-	Read_Pcap('/home/bowen/Desktop/lidar/VELODYNE/VLP-16 Sample Data/2015-07-23-14-59-16_Velodyne-VLP-16-Data_Downtown 20Hz Dual.pcap', "Dual")
+
+	# Read_Pcap('/home/poopeye/Desktop/WorkRelated/lidar/VELODYNE/VLP-16 Sample Data/2015-07-23-14-37-22_Velodyne-VLP-16-Data_Downtown 10Hz Single.pcap', "Single")
+
+	# Read_Pcap('/home/poopeye/Desktop/WorkRelated/02-Marrysville-2016-09-13-14-18-15_Velodyne-VLP-16-Data.pcap', "Dual")
+
+	Read_Pcap('/home/poopeye/Desktop/WorkRelated/lidar/Cyber_Lab_Study_Sample/2016-09-20-13-19-02_Velodyne-VLP-16-Data-Strongest-Lower.pcap', "Single")
+
+	
+
+	# Read_Pcap('/home/bowen/Desktop/lidar/VELODYNE/VLP-16 Sample Data/2015-07-23-14-59-16_Velodyne-VLP-16-Data_Downtown 20Hz Dual.pcap', "Dual")
 
 	# f = open('02-Marrysville-2016-09-13-14-18-15_Velodyne-VLP-16-Data.pcap')
 	# # f = open('2015-07-23-14-37-22_Velodyne-VLP-16-Data_Downtown 10Hz Single.pcap')
