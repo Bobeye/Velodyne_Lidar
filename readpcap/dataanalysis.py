@@ -199,55 +199,37 @@ class Plane_Segmentation(object):
 
 
 
+	def Fit_Plane_SVD(self):	# slower than LTSQ
+		cloud = self.Build_Point_Cloud()
+		[rows, cols] = cloud.shape
+		# Set up constraint equations of the form  AB = 0,
+		# where B is a column vector of the plane coefficients
+		# in the form b(1)*X + b(2)*Y +b(3)*Z + b(4) = 0.
+		p = (np.ones((rows,1)))
+		AB = np.hstack([cloud,p])
+		[u, d, v] = np.linalg.svd(AB,0)        
+		B = v[3,:];                    # Solution is last column of v.
+		nn = np.linalg.norm(B[0:3])
+		B = B / nn
+		return B[0:3]
 
-
-
-
-
-
-
-
-
-
-		# for i in range(len(possible_ground)):
-		# 	if possible_ground_signature[i][0] >= 100 and possible_ground_signature[i][1] >= 100 and possible_ground_signature[i][2] <= 30:
-		# 		print possible_ground[i]
-		# print len(possible_ground)
-
-		
-
-
-		
-		# # extract possible ground
-		# not_ground = -1000
-		# possible_ground = [0]
-		# impossible_ground = [0]
-		# for i in xrange(points_num):
-		# 	if init_point_cloud[i][5] < not_ground:
-		# 		possible_ground.append(init_point_cloud[i])
-		# 	else:
-		# 		impossible_ground.append(init_point_cloud[i])
-		# possible_ground.pop(0)
-		# impossible_ground.pop(0)
-
-		# # cluster closed points into object voxel
-		# impossible_ground_voxel = self.Build_Point_Voxel(impossible_ground)
-		# possible_object_voxel = [0]
-		# print len(impossible_ground_voxel)
-		# for i in xrange(len(impossible_ground_voxel)):
-		# 	if len(impossible_ground_voxel[i]) > 3:
-		# 		possible_object_voxel.append(impossible_ground_voxel[i])
-		# possible_object_voxel.pop(0)
-	
-		# for i in xrange(len(possible_object_voxel)):
-		# 	for j in xrange(possible_object_voxel[i]):
-		# 		possible_object_voxel[i][j] = 
-
-		# 	possible_object_voxel[i].insert(0,[])
-
-
-		# print len(possible_object_voxel)
-
+	def Fit_Plane_LTSQ(self):
+		cloud = self.Build_Point_Cloud()
+		# Fits a plane to a point cloud, 
+		# Where Z = aX + bY + c
+		# Rearanging Eqn1: aX + bY -Z +c =0
+		# Gives normal (a,b,-1)
+		# Normal = (a,b,-1)
+		[rows,cols] = cloud.shape
+		G = np.ones((rows,3))
+		G[:,0] = cloud[:,0]  #X
+		G[:,1] = cloud[:,1]  #Y
+		Z = cloud[:,2]
+		(a,b,c),resid,rank,s = np.linalg.lstsq(G,Z) 
+		normal = (a,b,-1)
+		nn = np.linalg.norm(normal)
+		normal = normal / nn
+		return normal
 
 		
 
@@ -301,6 +283,10 @@ class Plane_Segmentation(object):
 		voxel_list.pop(0)
 		
 		return voxel_list
+
+
+
+
 
 
 
