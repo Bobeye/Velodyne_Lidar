@@ -226,22 +226,13 @@ def Read_Pcap(FRP_pcap, Mode):
 
 
 	sample_data = Decode_Pcap(udp_list,100,Mode)
-	
 	print("number of sample data points: ", len(sample_data))
-
-
-
 	da_sample = dataanalysis.Plane_Segmentation(sample_data)
 	da_ground = da_sample.Ground_Classification()
 
-	# da_sample_ground = da_sample.Build_Point_Voxel()
-
-
-
-
 
 	# # plot raw data
-	# sample_size = 50 	# number of packets for each sample plot
+	# sample_size = 100 	# number of packets for each sample plot
 	# raw_decoded_udp = list(range(sample_size))
 	# raw_decoded_udp_data = list(range(sample_size))
 	# for i in xrange(sample_size):
@@ -258,7 +249,7 @@ def Read_Pcap(FRP_pcap, Mode):
 	# 	c_array[i] = (0,0,0)
 	# for i in xrange(sample_size):
 	# 	for j in xrange(len(raw_decoded_udp_data[i])):
-	# 		if raw_decoded_udp_data[i][j][7] <= 1000 or raw_decoded_udp_data[i][j][6] >= 240 or raw_decoded_udp_data[i][j][6] <= 15:
+	# 		if raw_decoded_udp_data[i][j][7] <= 500:
 	# 			pass
 	# 		else:
 	# 			ref = raw_decoded_udp_data[i][j][6]
@@ -378,7 +369,7 @@ if __name__=='__main__':
 
 	# Read_Pcap('/home/poopeye/Desktop/WorkRelated/02-Marrysville-2016-09-13-14-18-15_Velodyne-VLP-16-Data.pcap', "Dual")
 
-	Read_Pcap('/home/poopeye/Desktop/WorkRelated/lidar/Cyber_Lab_Study_Sample/2016-09-20-13-19-02_Velodyne-VLP-16-Data-Strongest-Lower.pcap', "Single")
+	Read_Pcap('/home/bowen/Desktop/lidar/Cyber_Lab_Study_Sample/2016-09-20-13-19-02_Velodyne-VLP-16-Data-Strongest-Lower.pcap', "Single")
 
 	
 

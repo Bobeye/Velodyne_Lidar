@@ -9,6 +9,40 @@ class Plane_Segmentation(object):
 
 
 	def Ground_Classification(self):	# distinguish points from ground and nonground
+		def Fit_Plane_LTSQ(point_cloud):
+			cloud = point_cloud
+			# Fits a plane to a point cloud, 
+			# Where Z = aX + bY + c
+			# Rearanging Eqn1: aX + bY -Z +c =0
+			# Gives normal (a,b,-1)
+			# Normal = (a,b,-1)
+			[rows,cols] = cloud.shape
+			G = np.ones((rows,3))
+			G[:,0] = cloud[:,0]  #X
+			G[:,1] = cloud[:,1]  #Y
+			Z = cloud[:,2]
+			(a,b,c),resid,rank,s = np.linalg.lstsq(G,Z) 
+			normal = (a,b,-1)
+			nn = np.linalg.norm(normal)
+			normal = normal / nn
+			return normal
+
+		def Fit_Plane_SVD(point_cloud):	# slower than LTSQ
+			cloud = point_cloud
+			[rows, cols] = cloud.shape
+			# Set up constraint equations of the form  AB = 0,
+			# where B is a column vector of the plane coefficients
+			# in the form b(1)*X + b(2)*Y +b(3)*Z + b(4) = 0.
+			p = (np.ones((rows,1)))
+			AB = np.hstack([cloud,p])
+			[u, d, v] = np.linalg.svd(AB,0)        
+			B = v[3,:];                    # Solution is last column of v.
+			nn = np.linalg.norm(B[0:3])
+			B = B / nn
+			return B[0:3]
+
+
+
 		def points_deviation_mean(data_points):
 			points = data_points
 
@@ -42,7 +76,7 @@ class Plane_Segmentation(object):
 		points_num = len(init_point_cloud)
 
 		# build ground column
-		columb_res = 200
+		columb_res = 1000
 		# range x & y
 		x_range = [0,0]
 		y_range = [0,0]
@@ -100,7 +134,7 @@ class Plane_Segmentation(object):
 		# possible ground
 		possible_ground = [0]
 		possible_ground_signature = [0]
-		possible_ground_threshold = 5 	# the minimum number of points that's inside a single voxel
+		possible_ground_threshold = 15 	# the minimum number of points that's inside a single voxel
 		for i in xrange(len(column_list)):
 			if len(column_list[i]) == 1 and len(column_list[i][0]) > possible_ground_threshold:
 				points_dev_m = points_deviation_mean(column_list[i][0])
@@ -108,6 +142,8 @@ class Plane_Segmentation(object):
 				possible_ground.append(column_list[i][0])
 		possible_ground.pop(0)
 		possible_ground_signature.pop(0)
+
+		print("number of possible_ground voxels: ", len(possible_ground))
 
 		# arrange x_mean and y_mean from min to max for further searching
 		x_mean_list = [possible_ground_signature[0][3]]
@@ -167,70 +203,173 @@ class Plane_Segmentation(object):
 			else:
 				i = i + 1
 
-		# compare between the flat & nonflat to find the might-ground
+
+
+		print("number of possible_ground_flat_voxels: ", len(possible_ground_flat))
+		print("number of possible_ground_nonflat_voxels: ", len(possible_ground_nonflat))
+
+
+		# each ground-flat to plane
+		for i in xrange(len(possible_ground_flat)):
+			temp_cloud = [0]
+			for j in xrange(len(possible_ground_flat[i])):
+				temp_cloud.append([possible_ground_flat[i][j][3],possible_ground_flat[i][j][4],possible_ground_flat[i][j][5]])
+			temp_cloud.pop(0)
+			possible_ground_flat[i].insert(0,temp_cloud)
+		possible_ground_flat_plane = [0]
+		for i in xrange(len(possible_ground_flat)):
+			temp_array = np.array(possible_ground_flat[i][0])
+			possible_ground_flat[i].insert(0, Fit_Plane_SVD(temp_array))
+			possible_ground_flat[i].pop(1)
+			possible_ground_flat_plane.append(possible_ground_flat[i][0])
+		possible_ground_flat_plane.pop(0)
+		print("number of possible ground flat plane:", len(possible_ground_flat_plane))
+
+		# universal ground : put all possible ground within 5000 mm range together 
+		universal_possible_ground = []
+		temp_cloud = []
+		for i in xrange(len(possible_ground_flat)):
+			if abs(possible_ground_flat_sig[i][4]) <= 5000 and abs(possible_ground_flat_sig[i][3]) <= 5000:
+				universal_possible_ground = universal_possible_ground + possible_ground_flat[i][1:len(possible_ground_flat[i])-1]
+		for i in xrange(len(universal_possible_ground)):
+			temp_cloud = temp_cloud + [[universal_possible_ground[i][3],universal_possible_ground[i][4],universal_possible_ground[i][5]]]
+		temp_array = np.array(temp_cloud)
+		universal_possible_ground.insert(0,list(Fit_Plane_LTSQ(temp_array)))
+		print("norm of universal ground:",universal_possible_ground[0])
+
+	# def Object_Tracking(self, point_cloud, object_size):	# object size in volumn mm^3
 		
 
 
 
-		x = [0]
-		y = [0]
-		z = [0]
-		fig = plt.figure()
-		test_pcl_plot = fig.gca(projection='3d')
-		test_pcl_plot.set_xlim3d(-10000, 10000)
-		test_pcl_plot.set_ylim3d(-10000, 10000)
-		test_pcl_plot.set_zlim3d(-10000, 10000)
-		for i in range(len(possible_ground_flat)):
-			for j in range(len(possible_ground_flat[i])):
-				x.append(possible_ground_flat[i][j][3])
-				y.append(possible_ground_flat[i][j][4])
-				z.append(possible_ground_flat[i][j][5])
-		test_pcl_plot.plot(x, y, z, '.')
-		x = [0]
-		y = [0]
-		z = [0]
-		for i in range(len(possible_ground_nonflat)):
-			for j in range(len(possible_ground_nonflat[i])):
-				x.append(possible_ground_nonflat[i][j][3])
-				y.append(possible_ground_nonflat[i][j][4])
-				z.append(possible_ground_nonflat[i][j][5])
-		test_pcl_plot.plot(x, y, z, '*')
-		plt.show()
+
+
+		# # put near flat together
+		# def If_Near_Voxels(v1,v2,xres,yres,zres):
+		# 	v1x = v1[3]
+		# 	v1y = v1[4]
+		# 	v1z = v1[5]
+		# 	v2x = v2[3]
+		# 	v2y = v2[4]
+		# 	v2z = v2[5]
+		# 	if abs(v1x - v2x) <= 2*xres and abs(v1y - v2y) <= 2*yres and abs(v1z - v2z) <= 2*zres:
+		# 		return True
+		# 	else:
+		# 		return False
+		# def If_Near_Plane(p1,p2):
+		# 	p1a = p1[0]
+		# 	p1b = p1[1]
+		# 	p1c = p1[2]
+		# 	p2a = p2[0]
+		# 	p2b = p2[1]
+		# 	p2c = p2[2]
+		# 	if p1a >= 0 and p2a >= 0:
+		# 		a = True
+		# 	else:
+		# 		a = False
+		# 	if p1b >= 0 and p2b >= 0:
+		# 		b = True
+		# 	else:
+		# 		b = False
+		# 	if p1c >= 0 and p2c >= 0:
+		# 		c = True
+		# 	else:
+		# 		c = False
+		# 	if a=b and b=c:
+		# 		return True
+		# 	else:
+		# 		return False
+		# temp_possible_ground_flat_sig = possible_ground_flat_sig
+		# temp_possible_ground_flat_plane = possible_ground_flat_plane
+		# temp_x_res = columb_res
+		# temp_y_res = columb_res
+		# temp_z_res = slice_res
+		# for i in range(temp_possible_ground_flat_sig):		# add trace tag to flat_sig and flat_plane
+		# 	temp_possible_ground_flat_sig[i] = [i,temp_possible_ground_flat_sig[i]]
+		# 	temp_possible_ground_flat_plane[i] = [i,temp_possible_ground_flat_plane[i]]
+		
+
+
+		# g_num = []
+		# while temp_possible_ground_flat_sig and temp_possible_ground_flat_plane:
+		# 	g_num = g_num + [temp_possible_ground_flat_sig[0][0]]  
+		# 	temp_possible_ground_flat_sig.pop(0)
+		# 	temp_possible_ground_flat_plane.pop(0)
+		
+		# 	g_tag = 0
+		
+		# 	while g_tag == 0:
+		# 		g_count = len(g_num) - 1
+
+		# 		for n in range(len(g_num[g_count])):
+		# 			n_n = g_num[g_count][n]
+
+
+		# 			list_to_append = Near_Voxel_Recuisive()
+					
+					
+		# 			m_tag = 0
+					
+		# 			for m in range(len(temp_possible_ground_flat_sig)):
+		# 				if If_Near_Voxels(temp_possible_ground_flat_sig[n_n][1],temp_possible_ground_flat_sig[m][1],temp_x_res,temp_y_res,temp_z_res) \
+		# 		   		and If_Near_Plane(temp_possible_ground_flat_plane[n_n][1],temp_possible_ground_flat_plane[m][1]):
+		# 		   			g_num[g_count].append(temp_possible_ground_flat_sig[m][0])
+		# 		   			m_list = m_list + [m]
+		# 		   			m_tag = 1
 
 
 
-	def Fit_Plane_SVD(self):	# slower than LTSQ
-		cloud = self.Build_Point_Cloud()
-		[rows, cols] = cloud.shape
-		# Set up constraint equations of the form  AB = 0,
-		# where B is a column vector of the plane coefficients
-		# in the form b(1)*X + b(2)*Y +b(3)*Z + b(4) = 0.
-		p = (np.ones((rows,1)))
-		AB = np.hstack([cloud,p])
-		[u, d, v] = np.linalg.svd(AB,0)        
-		B = v[3,:];                    # Solution is last column of v.
-		nn = np.linalg.norm(B[0:3])
-		B = B / nn
-		return B[0:3]
+		# 		   	for mm in len(m_list):
+		# 	   			temp_possible_ground_flat_sig.pop(m_list[mm])
+		# 	   			temp_possible_ground_flat_plane.pop(m_list[mm])
 
-	def Fit_Plane_LTSQ(self):
-		cloud = self.Build_Point_Cloud()
-		# Fits a plane to a point cloud, 
-		# Where Z = aX + bY + c
-		# Rearanging Eqn1: aX + bY -Z +c =0
-		# Gives normal (a,b,-1)
-		# Normal = (a,b,-1)
-		[rows,cols] = cloud.shape
-		G = np.ones((rows,3))
-		G[:,0] = cloud[:,0]  #X
-		G[:,1] = cloud[:,1]  #Y
-		Z = cloud[:,2]
-		(a,b,c),resid,rank,s = np.linalg.lstsq(G,Z) 
-		normal = (a,b,-1)
-		nn = np.linalg.norm(normal)
-		normal = normal / nn
-		return normal
 
+		# def Near_Voxel_Recuisive(close_voxel_list:initial_voxel, rest_voxel_list, tag):
+		# 	if close voxel can be found:
+		# 		Near_Voxel_Recuisive(initial_voxel, voxel_list, tag)
+		# 	else:
+		# 		return close_voxel_list
+
+
+
+		# 	return near_voxel_list , loop_tag
+
+
+		# # print len(possible_ground_flat_sig)
+		# # print len(possible_ground_flat_plane)
+
+
+
+
+
+		# x = [0]
+		# y = [0]
+		# z = [0]
+		# fig = plt.figure()
+		# test_pcl_plot = fig.gca(projection='3d')
+		# test_pcl_plot.set_xlim3d(-10000, 10000)
+		# test_pcl_plot.set_ylim3d(-10000, 10000)
+		# test_pcl_plot.set_zlim3d(-10000, 10000)
+		# for i in range(len(possible_ground_flat)):
+		# 	for j in range(len(possible_ground_flat[i])):
+		# 		x.append(possible_ground_flat[i][j][3])
+		# 		y.append(possible_ground_flat[i][j][4])
+		# 		z.append(possible_ground_flat[i][j][5])
+		# test_pcl_plot.plot(x, y, z, '.')
+		# x = [0]
+		# y = [0]
+		# z = [0]
+		# # for i in range(len(possible_ground_nonflat)):
+		# 	for j in range(len(possible_ground_nonflat[i])):
+		# 		x.append(possible_ground_nonflat[i][j][3])
+		# 		y.append(possible_ground_nonflat[i][j][4])
+		# 		z.append(possible_ground_nonflat[i][j][5])
+		# test_pcl_plot.plot(x, y, z, '*')
+		# plt.show()
+
+
+
+	
 		
 
 
