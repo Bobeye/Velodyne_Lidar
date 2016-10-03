@@ -234,11 +234,38 @@ class Plane_Segmentation(object):
 		for i in xrange(len(universal_possible_ground)):
 			temp_cloud = temp_cloud + [[universal_possible_ground[i][3],universal_possible_ground[i][4],universal_possible_ground[i][5]]]
 		temp_array = np.array(temp_cloud)
+		universal_possible_ground_dev_mean = points_deviation_mean(universal_possible_ground)
 		universal_possible_ground.insert(0,list(Fit_Plane_LTSQ(temp_array)))
 		print("norm of universal ground:",universal_possible_ground[0])
+		print("dev and mean of universal ground: ",universal_possible_ground_dev_mean)
 
-	# def Object_Tracking(self, point_cloud, object_size):	# object size in volumn mm^3
+		Ground_Results = {'Voxels' : column_list,
+						  'Ground Voxels' : possible_ground_flat,
+						  'Ground Voxels Signature' : possible_ground_flat_sig,
+						  'Ground Planes' : possible_ground_flat_plane,
+						  'Ground Dev Mean' : universal_possible_ground_dev_mean,
+						  'Ground Plane Norm' : universal_possible_ground[0]}
+		print Plane_Segmentation_Results['Voxels']
+
+
 		
+
+	# def Object_Tracking(self, point_cloud, object_size, object_height):	# object size in volumn mm^3, height in mm
+	# 	init_point_cloud = self.__point_cloud
+	# 	points_num = len(init_point_cloud)
+
+	# 	Ground = self.Ground_Classification()
+	# 	voxels = Ground['Voxels']
+	# 	voxels_num = len(voxels)
+	# 	Object_Pass_Through_min = 
+	# 	Object_Pass_Through_max = object_height + Object_Pass_Through_min
+
+	# 	for i in xrange(voxels_num):
+	# 		if len(voxel_list[i]) > 1:
+	# 			for j in xrange(len(voxel_list[i])):
+	# 				if voxel_list[i][j][] >= 
+
+			
 
 
 
