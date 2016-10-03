@@ -237,31 +237,37 @@ class READPCAP(object):
 		udp_list = self.Read_Pcap()
 
 
-		sample_size = 100 	# number of packets for each sample plot
-		raw_decoded_udp = list(range(sample_size))
-		raw_decoded_udp_data = list(range(sample_size))
-		for i in xrange(sample_size):
-			raw_decoded_udp[i] = self.Decode_UDP(udp_list[i])[4]
-			raw_decoded_udp_data[i] = self.Decode_Data_Packet(raw_decoded_udp[i])
-		x_array = list(range(256))
-		y_array = list(range(256))
-		z_array = list(range(256))
-		c_array = list(range(256))
-		for i in range(256):
-			x_array[i] = []
-			y_array[i] = []
-			z_array[i] = []	
-			c_array[i] = (0,0,0)
-		# for i in xrange(sample_size):
-		# 	for j in xrange(len(raw_decoded_udp_data[i])):
-		# 		if raw_decoded_udp_data[i][j][7] <= 500:
-		# 			pass
-		# 		else:
-		# 			ref = raw_decoded_udp_data[i][j][6]
-		# 			x_array[ref] = x_array[ref] + [raw_decoded_udp_data[i][j][3]]
-		# 			y_array[ref] = y_array[ref] + [raw_decoded_udp_data[i][j][4]]
-		# 			z_array[ref] = z_array[ref] + [raw_decoded_udp_data[i][j][5]]
-		# 			c_array[ref] = (1-ref/256.0,0,ref/256.0)
+		def Plot_Update(PU_Sample):
+			sample_size = len(PU_Sample) 	# number of packets for each sample plot
+			raw_decoded_udp = list(range(sample_size))
+			raw_decoded_udp_data = list(range(sample_size))
+			for i in xrange(sample_size):
+				raw_decoded_udp[i] = self.Decode_UDP(PU_Sample[i])[4]
+				raw_decoded_udp_data[i] = self.Decode_Data_Packet(raw_decoded_udp[i])
+			x_array = list(range(256))
+			y_array = list(range(256))
+			z_array = list(range(256))
+			c_array = list(range(256))
+			for i in range(256):
+				x_array[i] = []
+				y_array[i] = []
+				z_array[i] = []	
+				c_array[i] = (0,0,0)
+			for i in xrange(sample_size):
+				for j in xrange(len(raw_decoded_udp_data[i])):
+					if raw_decoded_udp_data[i][j][7] <= 500:
+						pass
+					else:
+						ref = raw_decoded_udp_data[i][j][6]
+						x_array[ref] = x_array[ref] + [raw_decoded_udp_data[i][j][3]]
+						y_array[ref] = y_array[ref] + [raw_decoded_udp_data[i][j][4]]
+						z_array[ref] = z_array[ref] + [raw_decoded_udp_data[i][j][5]]
+						c_array[ref] = (1-ref/256.0,0,ref/256.0)
+
+		sample_size = 100
+		udp_list_init = udp_list[0,sample_size]
+		Plot_Init()
+
 
 
 
