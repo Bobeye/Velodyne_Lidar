@@ -236,178 +236,105 @@ class READPCAP(object):
 	def Plot_Pcap(self):
 		udp_list = self.Read_Pcap()
 
-
-		def Plot_Update(PU_Sample):
-			sample_size = len(PU_Sample) 	# number of packets for each sample plot
-			raw_decoded_udp = list(range(sample_size))
-			raw_decoded_udp_data = list(range(sample_size))
-			for i in xrange(sample_size):
-				raw_decoded_udp[i] = self.Decode_UDP(PU_Sample[i])[4]
-				raw_decoded_udp_data[i] = self.Decode_Data_Packet(raw_decoded_udp[i])
-			x_array = list(range(256))
-			y_array = list(range(256))
-			z_array = list(range(256))
-			c_array = list(range(256))
-			for i in range(256):
-				x_array[i] = []
-				y_array[i] = []
-				z_array[i] = []	
-				c_array[i] = (0,0,0)
-			for i in xrange(sample_size):
-				for j in xrange(len(raw_decoded_udp_data[i])):
-					if raw_decoded_udp_data[i][j][7] <= 500:
-						pass
-					else:
-						ref = raw_decoded_udp_data[i][j][6]
-						x_array[ref] = x_array[ref] + [raw_decoded_udp_data[i][j][3]]
-						y_array[ref] = y_array[ref] + [raw_decoded_udp_data[i][j][4]]
-						z_array[ref] = z_array[ref] + [raw_decoded_udp_data[i][j][5]]
-						c_array[ref] = (1-ref/256.0,0,ref/256.0)
-
-		sample_size = 100
-		udp_list_init = udp_list[0,sample_size]
-		Plot_Init()
-
-
-
-
-
-
-
-
-
-# 	# decode chosen number of packets
-
-
-# 	# sample_data = Decode_Pcap(udp_list,100,Mode)
-# 	# print("number of sample data points: ", len(sample_data))
-# 	# da_sample = dataanalysis.Plane_Segmentation(sample_data)
-# 	# da_ground = da_sample.Ground_Classification()
-
-
-# # plot raw data
-
-
-
-
-
-
-# 	sample_size = 100 	# number of packets for each sample plot
-# 	raw_decoded_udp = list(range(sample_size))
-# 	raw_decoded_udp_data = list(range(sample_size))
-# 	for i in xrange(sample_size):
-# 		raw_decoded_udp[i] = Decode_UDP(udp_list[i])[4]
-# 		raw_decoded_udp_data[i] = Decode_Data_Packet(raw_decoded_udp[i],Mode)
-# 	x_array = list(range(256))
-# 	y_array = list(range(256))
-# 	z_array = list(range(256))
-# 	c_array = list(range(256))
-# 	for i in range(256):
-# 		x_array[i] = []
-# 		y_array[i] = []
-# 		z_array[i] = []	
-# 		c_array[i] = (0,0,0)
-# 	for i in xrange(sample_size):
-# 		for j in xrange(len(raw_decoded_udp_data[i])):
-# 			if raw_decoded_udp_data[i][j][7] <= 500:
-# 				pass
-# 			else:
-# 				ref = raw_decoded_udp_data[i][j][6]
-# 				x_array[ref] = x_array[ref] + [raw_decoded_udp_data[i][j][3]]
-# 				y_array[ref] = y_array[ref] + [raw_decoded_udp_data[i][j][4]]
-# 				z_array[ref] = z_array[ref] + [raw_decoded_udp_data[i][j][5]]
-# 				c_array[ref] = (1-ref/256.0,0,ref/256.0)
-
-# 	sample_fig = plt.figure()
-# 	sample_plot = p3.Axes3D(sample_fig)
-# 	print c_array
-# 	for i in xrange(256):
-# 		if len(x_array) > 1:
-# 			sample_plot.plot(x_array[i],y_array[i],z_array[i],'.', c=c_array[i])
-# 	plt.show()
-
-
-
-
-
-
-
-
-	# # test plot
-	# test_decoded_udp = list(range(150))
-	# test_decoded_udp_data = list(range(150))
-	# for i in xrange(150):
-	# 	test_decoded_udp[i] = Decode_UDP(udp_list[i])[4]
-	# 	test_decoded_udp_data[i] = Decode_Data_Packet(test_decoded_udp[i],Mode)
-	# fig = plt.figure()
-	# test_pcl_plot = fig.gca(projection='3d')
-	# x_array = [[],[],[],[],[]]
-	# y_array = [[],[],[],[],[]]
-	# z_array = [[],[],[],[],[]]
-	# ref_array = []
-	# print len(test_decoded_udp_data[0])
-	# for i in xrange(len(test_decoded_udp_data)):
-	# 	for j in xrange(len(test_decoded_udp_data[i])):
-	# 		if test_decoded_udp_data[i][j][7] <= 100 or test_decoded_udp_data[i][j][6] >= 230 or test_decoded_udp_data[i][j][6] <= 10:
-	# 			pass
-	# 		else:
-	# 			x_array = x_array + [test_decoded_udp_data[i][j][3]]
-	# 			y_array = y_array + [test_decoded_udp_data[i][j][4]]
-	# 			z_array = z_array + [test_decoded_udp_data[i][j][5]]
-	# 			if test_decoded_udp_data[i][j][6] >= 70:
-	# 				ref_array = ref_array + ['#232325']
-	# 				x_array[0] = x_array[0] + [test_decoded_udp_data[i][j][3]]
-	# 				y_array[0] = y_array[0] + [test_decoded_udp_data[i][j][4]]
-	# 				z_array[0] = z_array[0] + [test_decoded_udp_data[i][j][5]]
-	# 			elif test_decoded_udp_data[i][j][6] >= 60 and test_decoded_udp_data[i][j][6] < 70:
-	# 				ref_array = ref_array + ['#4C4D64']
-	# 				x_array[1] = x_array[1] + [test_decoded_udp_data[i][j][3]]
-	# 				y_array[1] = y_array[1] + [test_decoded_udp_data[i][j][4]]
-	# 				z_array[1] = z_array[1] + [test_decoded_udp_data[i][j][5]]
-	# 			elif test_decoded_udp_data[i][j][6] >= 50 and test_decoded_udp_data[i][j][6] < 60:
-	# 				ref_array = ref_array + ['#5D619F']
-	# 				x_array[2] = x_array[2] + [test_decoded_udp_data[i][j][3]]
-	# 				y_array[2] = y_array[2] + [test_decoded_udp_data[i][j][4]]
-	# 				z_array[2] = z_array[2] + [test_decoded_udp_data[i][j][5]]
-	# 			elif test_decoded_udp_data[i][j][6] >= 40 and test_decoded_udp_data[i][j][6] < 50:
-	# 				ref_array = ref_array + ['#353FCA']
-	# 				x_array[3] = x_array[3] + [test_decoded_udp_data[i][j][3]]
-	# 				y_array[3] = y_array[3] + [test_decoded_udp_data[i][j][4]]
-	# 				z_array[3] = z_array[3] + [test_decoded_udp_data[i][j][5]]
-	# 			else:
-	# 				ref_array = ref_array + ['#0E1DF7']
-	# 				x_array[4] = x_array[4] + [test_decoded_udp_data[i][j][3]]
-	# 				y_array[4] = y_array[4] + [test_decoded_udp_data[i][j][4]]
-	# 				z_array[4] = z_array[4] + [test_decoded_udp_data[i][j][5]]
-	# test_pcl_plot.set_xlim3d(-200000, 200000)
-	# test_pcl_plot.set_ylim3d(-200000, 200000)
-	# test_pcl_plot.set_zlim3d(-200000, 200000)
-
-	
-	# plt.show()
-
-
-
 	
 
+		global globe_udp_list
+		globe_udp_list = udp_list
 
+		pts_fig = plt.figure()
+		pts_plt = pts_fig.add_axes([0, 0, 1, 1], projection='3d',axisbg='gray')
+		
 
+		pts_plt.set_xlim((-15000, 15000))
+		pts_plt.set_ylim((-15000, 15000))
+		pts_plt.set_zlim((-600, 10000))
+		pts_plt.set_xlabel('X/mm')
+		pts_plt.set_ylabel('Y/mm')
+		pts_plt.set_zlabel('Z/mm')
+		pts_plt.grid(False)
+		pts_plt.axis('off')
 
+		pts_plt.view_init(0, 0)
 
+		pts = sum([pts_plt.plot([], [], [], '.')],[])
+		for pt in pts:
+			pt.set_data([], [])
+	        pt.set_3d_properties([])
+		
+		def init():
+			for pt in pts:
+				pt.set_data([], [])
+				pt.set_3d_properties([])
+			return pts
 
-	# udp_data_list = [0]
-	# for i in xrange(udp_num):
-	# 	udp_data_list.append(Decode_UDP(udp_list[i])[4])	# [ip.src, udp.sport, ip.dst, udp.dport, udp.data(4), ip.v]
-	# udp_data_list.pop(0)
-	# decode_udp_data_list = list(range(udp_num))		# decode udp data packets
-	# start = time.time()
-	# for i in xrange(udp_num):
-	# 	decode_udp_data_list[i] = Decode_Data_Packet(udp_data_list[i],Mode)
-	# end = time.time()
-	# print (end-start)
-	# print ("success")
-	# print decode_udp_data_list[0][0][9]
-	# print decode_udp_data_list[udp_num-155500-1][383][9]
+		def points_list_gen():
+			global globe_udp_list
+			sample_size = 3 	# number of packets for each sample plot
+			n = 0
+			
+			last_x = []
+			last_y = []
+			last_z = []
+			while n < len(globe_udp_list)/sample_size-1:
+				raw_decoded_udp = list(range(sample_size))
+				raw_decoded_udp_data = list(range(sample_size))
+				for i in xrange(sample_size):
+					raw_decoded_udp[i] = self.Decode_UDP(globe_udp_list[n*sample_size+i])[4]
+					raw_decoded_udp_data[i] = self.Decode_Data_Packet(raw_decoded_udp[i])
+				# x_array = list(range(256))
+				# y_array = list(range(256))
+				# z_array = list(range(256))
+				# c_array = list(range(256))
+				# for i in range(256):
+				# 	x_array[i] = []
+				# 	y_array[i] = []
+				# 	z_array[i] = []	
+				# 	c_array[i] = (0,0,0)
+				# for i in xrange(sample_size):
+				# 	for j in xrange(len(raw_decoded_udp_data[i])):
+				# 		if raw_decoded_udp_data[i][j][7] <= 500:
+				# 			pass
+				# 		else:
+				# 			ref = raw_decoded_udp_data[i][j][6]
+				# 			x_array[ref] = x_array[ref] + [raw_decoded_udp_data[i][j][3]]
+				# 			y_array[ref] = y_array[ref] + [raw_decoded_udp_data[i][j][4]]
+				# 			z_array[ref] = z_array[ref] + [raw_decoded_udp_data[i][j][5]]
+				# 			c_array[ref] = (1-ref/256.0,0,ref/256.0)
+				x_array = []
+				y_array = []
+				z_array = []
+				for i in xrange(sample_size):
+					for j in xrange(len(raw_decoded_udp_data[i])):
+						if raw_decoded_udp_data[i][j][7] <= 500:
+							pass
+						else:
+							x_array = x_array + [raw_decoded_udp_data[i][j][3]]
+							y_array = y_array + [raw_decoded_udp_data[i][j][4]]
+							z_array = z_array + [raw_decoded_udp_data[i][j][5]]
+				last_x = x_array + last_x
+				last_y = y_array + last_y
+				last_z = z_array + last_z
+				if len(last_x) >= 40000:
+					del last_x[:3]
+					del last_y[:3]
+					del last_z[:3]
+				n += 1
+				# yield x_array, y_array, z_array
+				yield last_x, last_y, last_z
+
+		def points_list_update(points):
+			x_arr, y_arr, z_arr = points
+			for pt in pts:
+				pt.set_data(x_arr,y_arr)
+				pt.set_3d_properties(z_arr)
+
+			pts_fig.canvas.draw()
+
+			return pts
+
+		point_cloud_anim = animation.FuncAnimation(pts_fig, points_list_update, points_list_gen, init_func = init, interval = 1, blit = False)
+
+		plt.show()
 
 
 
