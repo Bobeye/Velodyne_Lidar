@@ -209,7 +209,7 @@ class PedestrianClass(object):
 	def PointCloud(self):
 		route = self.__route
 		for i in xrange(3):
-			filename = route + str(100004 + i) + '.pcap'
+			filename = route + str(100005 + i) + '.pcap'
 			packets = PcaptoPoints(filename, 'Dual').Read_Pcap()
 			udp = packets[0]
 			gps = packets[1]
@@ -235,7 +235,7 @@ class PedestrianClass(object):
 
 		# clean up points
 		for i in xrange(16*3600):
-			if pts[i][6] > 8000: 		# distance > 8m
+			if pts[i][6] > 3000: 		# distance > 8m
 				pts[i][6] = 0
 				pts[i][8] = 0
 				pts[i][9] = 0
@@ -265,13 +265,180 @@ class PedestrianClass(object):
 		DIM = 3
 		from scipy.spatial import KDTree
 		tree = KDTree(pts_xyz, leafsize=pts_xyz.shape[0]+1)
-		point = pts_xyz[99]
-		distances, ndx = tree.query([point], k=100)
-		print pts_xyz[ndx]
-		print np.amax(distances)
+		# point = pts_xyz[99]
+		# distances, ndx = tree.query([point], k=100)
+		# print ndx
+		# ndx = tree.query_ball_point(point, 150)
+		# print ndx
 
+
+		
+		fig = plt.figure()
+		pts_plot = fig.gca(projection = '3d')
+		pts_plot.set_xlim3d(-15000,15000)
+		pts_plot.set_ylim3d(-15000,15000)
+		pts_plot.set_zlim3d(-15000,15000)
+		
+
+
+		# covariance matrix
+		# pts_xyz_temp = np.copy(pts_xyz)
+		# while np.any(pts_xyz_temp):
+		# 	pt = pts_xyz_temp[0]
+		# 	n1 = tree.query_ball_point(pt,150)
+		# 	n2 = tree.query_ball_point(pt,200)
+		# 	if n1 == n2:
+
+
+		
+		ped = []
+		x = []
+		y = []
+		z = []
+		ped_in_pts = False
+		n = 0
+		while not ped_in_pts and n<pts_xyz.shape[0]:
+			pt = pts_xyz[n]
+			n1 = tree.query_ball_point(pt,400)
+			n2 = tree.query_ball_point(pt,500)
+			if n1 == n2 and len(n1)>30:
+				ped = pts_xyz[n1]
+				ped_in_pts = True
+			n += 1
+		
+		for ppt in ped:
+			x += [ppt[0]]
+			y += [ppt[1]]
+			z += [ppt[2]]
+
+		xo = []
+		yo = []
+		zo = []
+		for pt in pts_xyz:
+			xo += [pt[0]]
+			yo += [pt[1]]
+			zo += [pt[2]]
+
+		print ped
+
+
+		
+		pts_plot.plot(xo,yo,zo,'g.')		
+		pts_plot.plot(x,y,z,'r.')
+		plt.show()
+
+
+
+		
+
+
+		# 	if pt not in possip:
+
+		# 		n1 = tree.query_ball_point(pt,150)
+		# 		n2 = tree.query_ball_point(pt,200)
+		# 		if n1 == n2 and len(n1)>30:
+		# 			for n in n1:
+		# 				possip += [pts_xyz[n1]]
+
+		# for pt in possip:
+		# 	x += pt[0]
+		# 	y += pt[1]
+		# 	z += pt[2]
+		# pts_plot.plot(x,y,z,'.')		
+		# plt.show()
+
+		# x = np.unique(x_array)
+		# y = np.unique(y_array)
+		# z = np.unique(z_array)
+			
+
+
+		# if x.size > 0:
+		# 	pts_plot.plot(x,y,z,'.')		
+		# 	plt.show()
+		# else:
+		# 	pass
+				
+
+
+		# 	nearest_index = tree.query_ball_point(pt, 200)
+		# 	nearest = pts_xyz[nearest_index]
+		# 	cavr_x = []
+		# 	cavr_y = []
+		# 	cavr_z = []
+		# 	for npt in nearest:
+		# 		cavr_x += [npt[0] - pt[0]]
+		# 		cavr_y += [npt[1] - pt[1]]
+		# 		cavr_z += [npt[2] - pt[2]]
+		# 	cavr = np.array([cavr_x, cavr_y, cavr_z])
+		# 	cavr_matrix = np.dot(cavr, cavr.T)
+		# 	cavr_eig = np.linalg.eigvals(cavr_matrix)
+		# 	# print cavr_eig
+
+		# 	if np.amin(cavr_eig) > 1000:
+		# 		x_array += [pt[0]]
+		# 		y_array += [pt[1]]
+		# 		z_array += [pt[2]]
+		# pts_plot.plot(x_array,y_array,z_array,'.')
+
+		# plt.show()
+
+
+			
+
+
+
+		# pts = opts
+		# fig = plt.figure()
+		# pts_plot = fig.gca(projection = '3d')
+		# pts_plot.set_xlim3d(-15000,15000)
+		# pts_plot.set_ylim3d(-15000,15000)
+		# pts_plot.set_zlim3d(-15000,15000)
+		# x_array = []
+		# y_array = []
+		# z_array = []
+		# for i in xrange(pts.shape[0]):
+		# 	x_array += [pts[i][6] * math.cos(pts[i][4]/360.0*(2*math.pi)) * math.sin(pts[i][7]/3600.0*(2*math.pi))]
+		# 	y_array += [pts[i][6] * math.cos(pts[i][4]/360.0*(2*math.pi)) * math.cos(pts[i][7]/3600.0*(2*math.pi))]
+		# 	z_array += [pts[i][6] * math.sin(pts[i][4]/360.0*(2*math.pi))]
+		# pts_plot.plot(x_array,y_array,z_array,'.')
+
+		# plt.show()
+
+
+
+		# 			cavr_x = []
+		# 			cavr_y = []
+		# 			cavr_z = []
+		# 			for cx in [i-1, i, i+1]:
+		# 				for cy in [j-1, j, j+1]:
+		# 					if cx == i and cy == j:
+		# 						pass
+		# 					elif pts_height[cx][cy] != 0:
+		# 						cavr_x += [pts_x[cx][cy]-pts_x[i][j]]
+		# 						cavr_y += [pts_y[cx][cy]-pts_y[i][j]]
+		# 						cavr_z += [pts_z[cx][cy]-pts_z[i][j]]
+		# 					else:
+		# 						cavr_x += [0]
+		# 						cavr_y += [0]
+		# 						cavr_z += [0]
+		# 			cavr = np.array([cavr_x, cavr_y, cavr_z])
+		# 			cavr_matrix = np.dot(cavr, cavr.T)
+		# 			cavr_eig = np.linalg.eigvals(cavr_matrix)
+
+
+		# 			covariance[i][j] = np.sum(cavr_eig)
+		# 			print covariance[i][j]
+
+
+
+
+		# print np.amax(distances)
 
 		# convariance matrix
+
+
+
 
 
 
@@ -395,8 +562,8 @@ class PedestrianClass(object):
 
 
 
-		pts = np.delete(pts,np.where(pts.T[6]==0),axis=0)	# non-zero points
-		self.ShowMeThePoints(pts)
+		# pts = np.delete(pts,np.where(pts.T[6]==0),axis=0)	# non-zero points
+		# self.ShowMeThePoints(pts)
 
 
 

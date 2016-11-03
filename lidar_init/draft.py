@@ -1,27 +1,18 @@
-'''Train a simple deep CNN on the CIFAR10 small images dataset.
-GPU run command:
-    THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python cifar10_cnn.py
-It gets down to 0.65 test logloss in 25 epochs, and down to 0.55 after 50 epochs.
-(it's still underfitting at that point, though).
-Note: the data was pickled with Python 2, and some encoding issues might prevent you
-from loading it in Python 3. You might have to load it in Python 2,
-save it in a different format, load it in Python 3 and repickle it.
-'''
-
 from __future__ import print_function
 from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adadelta
 from keras.utils import np_utils
+import numpy as np
 import tensorflow as tf
 tf.python.control_flow_ops = tf
 
-batch_size = 32
+batch_size = 128
 nb_classes = 10
-nb_epoch = 200
+nb_epoch = 400
 data_augmentation = True
 
 # input image dimensions
@@ -35,37 +26,30 @@ print('X_train shape:', X_train.shape)
 print(X_train.shape[0], 'train samples')
 print(X_test.shape[0], 'test samples')
 
-# print (X_train.shape)
-# print (y_train.shape)
-# print (X_test.shape)
-# print (y_test.shape)
-
-
-# print (X_train[0])
-
-
-
-
 # convert class vectors to binary class matrices
 Y_train = np_utils.to_categorical(y_train, nb_classes)
 Y_test = np_utils.to_categorical(y_test, nb_classes)
 
 model = Sequential()
 
-model.add(Convolution2D(32, 3, 3, border_mode='same',
+model.add(Convolution2D(96, 3, 3, border_mode='same',
                         input_shape=X_train.shape[1:]))
 model.add(Activation('relu'))
-model.add(Convolution2D(32, 3, 3))
+model.add(Convolution2D(96, 3, 3))
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+model.add(Convolution2D(96, 3, 3))
+model.add(Activation('relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.1))
 
-model.add(Convolution2D(64, 3, 3, border_mode='same'))
-model.add(Activation('relu'))
-model.add(Convolution2D(64, 3, 3))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
+# model.add(Convolution2D(192, 3, 3, border_mode='same'))
+# model.add(Activation('relu'))
+# model.add(Convolution2D(192, 3, 3))
+# model.add(Activation('relu'))
+# model.add(Convolution2D(192, 3, 3))
+# model.add(Activation('relu'))
+# # model.add(MaxPooling2D(pool_size=(2, 2)))
+# model.add(Dropout(0.2))
 
 model.add(Flatten())
 model.add(Dense(512))
@@ -75,7 +59,8 @@ model.add(Dense(nb_classes))
 model.add(Activation('softmax'))
 
 # let's train the model using SGD + momentum (how original).
-sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
+# adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-08, decay=0.0)
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd,
               metrics=['accuracy'])
@@ -118,3 +103,65 @@ else:
                         samples_per_epoch=X_train.shape[0],
                         nb_epoch=nb_epoch,
                         validation_data=(X_test, Y_test))
+
+ 
+# model_json = model.to_json()
+# open('cifar10_architecture.json', 'w').write(model_json)
+# model.save_weights('cifar10_weights.h5', overwrite=True)
+
+from keras.models import load_model
+
+model.save('my_model.h5')  # creates a HDF5 file 'my_model.h5'
+del model  # deletes the existing model
+
+
+"""
+
+from keras.models import load_model
+
+model = load_model('my_model.h5')
+
+import cv2
+# cap = cv2.VideoCapture("Off-Road Car Action From the Desert _ Dakar Rally 2016-ZpMVhhXAy98.mkv")
+cap = cv2.VideoCapture("/home/bowen/Desktop/Sample Videos/2016-03-01 14-18-38-542378_Partition_0.avi")
+print (cap.get(3))
+print (cap.get(4))
+
+car_count = 0
+
+while True:
+    if cap.grab():
+        flag, frame = cap.retrieve()
+        if not flag:
+            continue
+        else:
+            newframe = list(range(8))
+            for f in xrange(8):
+                newframe[f] = frame[(f%2)*360:(f%2)*360+360, (f/2)*320:(f/2)*320+320]
+                newframe_temp = cv2.resize(newframe[f],(32,32))
+                preds = model.predict(np.array([newframe_temp]))
+                if np.argmax(preds) == 1 or np.argmax(preds) == 9:
+                    print ("car!")
+                    imgname = 'car' + str(car_count) + '.jpg'
+                    cv2.imwrite(imgname, newframe[f])
+                    car_count += 1
+
+
+            # newframe = frame[0:720, 0:1280] # Crop from x, y, w, h -> 100, 200, 300, 400
+            # print (newframe.shape)
+            # newframe = cv2.resize(frame,(32,32))
+            # framehsv = cv2.cvtColor(newframe, cv2.COLOR_BGR2HSV)
+            # framehsv[:,:,2] += 50 # [[max(pixel - 25, 0) if pixel < 190 else min(pixel + 25, 255) for pixel in row] for row in framehsv[:,:,2]]
+            # newframe = cv2.cvtColor(framehsv, cv2.COLOR_HSV2BGR)
+            # preds = model.predict(np.array([newframe]))
+            # print (str(np.argmax(preds)) + " : " + str(np.amax(preds)))
+            # if np.argmax(preds) == 1 or np.argmax(preds) == 9:
+            #     print ("car!")
+            #     imgname = 'car' + str(car_count) + '.jpg'
+            #     cv2.imwrite(imgname, frame) 
+            #     car_count += 1
+            # print('Predicted:', preds[0].argsort)
+            cv2.imshow('video', frame)
+    if cv2.waitKey(10) == 27:
+        break
+"""
