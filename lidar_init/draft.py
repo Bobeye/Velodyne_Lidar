@@ -10,9 +10,9 @@ import numpy as np
 import tensorflow as tf
 tf.python.control_flow_ops = tf
 
-batch_size = 128
+batch_size = 100
 nb_classes = 10
-nb_epoch = 400
+nb_epoch = 1000
 data_augmentation = True
 
 # input image dimensions
@@ -59,7 +59,7 @@ model.add(Dense(nb_classes))
 model.add(Activation('softmax'))
 
 # let's train the model using SGD + momentum (how original).
-sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
+sgd = SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
 # adadelta = Adadelta(lr=1.0, rho=0.95, epsilon=1e-08, decay=0.0)
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd,

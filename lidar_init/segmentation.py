@@ -1,5 +1,6 @@
 import dpkt
 import socket
+import gc
 import math
 import time
 import numpy as np
@@ -167,20 +168,25 @@ class RealTimePointCloud(object):
 class ObjectDetection(object):
 	def __init__(self, route):
 		self.__route = route
-		self.__blind_dist = 200 # / math.sin(np.deg2rad(15)) 
+		self.__blind_dist = 1200 # / math.sin(np.deg2rad(15)) 
 
 	def PointCloud(self):
 		route = self.__route
 		for f in xrange(3):
-			filename = route + str(100019 + f) + '.pcap'
+			filename = route + str(100024 + f) + '.pcap'
 			packets = PcaptoPoints(filename, 'Dual').Read_Pcap()
-			udp = packets[0][0:900]
-			gps = packets[1]
+			last_uf = 0
+			for uf in xrange(len(packets[0])):
+				if uf != 0 and uf % 755 == 0:
+					udp = packets[0][last_uf:uf]
+					last_uf = uf
+					gps = packets[1]
 			
-			pcl = RealTimePointCloud(udp,gps,'Dual')
-			pts = pcl.PointCloud_init()
-			print (str(len(pts['points'])) + ' points extracted from ' + str(100000 + f) + '.pcap')
-			self.ObjectCluster(pts['points'])
+					pcl = RealTimePointCloud(udp,gps,'Dual')
+					pts = pcl.PointCloud_init()
+					print (str(len(pts['points'])) + ' points extracted from ' + str(100000 + f) + '.pcap')
+					self.ObjectCluster(pts['points'])
+			gc.collect()
 
 	def ObjectCluster(self, ptss):
 		bd = self.__blind_dist
@@ -206,7 +212,7 @@ class ObjectDetection(object):
 
 				# clean up points
 				for i in xrange(16*360):
-					if pts[i][6] > 20000: 		# distance > 20m
+					if pts[i][6] > 20000 or pts[i][6] < 2000: 		# distance > 20m
 						pts[i][6] = 0
 						pts[i][8] = 0
 						pts[i][9] = 0
@@ -225,16 +231,12 @@ class ObjectDetection(object):
 								pts[n][8] = 0
 								pts[n][9] = 0
 						else:
-							for ni in [-3,-2,-1,0,1,2,3]:
-								n += ni
-								if n >= 0 and n <360:
-									h_dif = abs(pts[n][9]-gt_1st)
-									if h_dif <= 500:
-										pts[n][6] = 0
-										pts[n][8] = 0
-										pts[n][9] = 0
-								else:
-									pass
+							h_dif = abs(pts[n][9]-gt_1st)
+							if h_dif <= 300:
+								gt_1st = pts[n][9]
+								pts[n][6] = 0
+								pts[n][8] = 0
+								pts[n][9] = 0
 						j += 1
 
 				# xyz analysis
@@ -254,23 +256,24 @@ class ObjectDetection(object):
 				pts_xyz = pts_xyz[~np.all(pts_xyz == 0, axis=1)]
 				pts_xy = np.delete(pts_xyz,-1,1)
 
+
 				# # rough cluster -- kd-tree
 				# DIM = 3
 				# from scipy.spatial import KDTree
 				# tree = KDTree(pts_xyz, leafsize=pts_xyz.shape[0]+1)
 
-
 				# DBSCAN
-				db = DBSCAN(eps=300, min_samples=20).fit(pts_xy)
+				db = DBSCAN(eps=1000, min_samples=15, algorithm='auto', leaf_size=50, n_jobs=1).fit(pts_xy)
 				core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
 				core_samples_mask[db.core_sample_indices_] = True
 				labels = db.labels_
 
 				# Number of clusters in labels, ignoring noise if present.
 				n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-
 				print('Estimated number of clusters: %d' % n_clusters_)
 
+				
+				######plot DBSCAN#######
 				fig = plt.figure()
 				pts_plot = fig.gca(projection = '3d')
 				pts_plot.set_xlim3d(-15000,15000)
@@ -286,17 +289,25 @@ class ObjectDetection(object):
 
 				    class_member_mask = (labels == k)
 
-				    xyz = pts_xyz[class_member_mask & core_samples_mask]
-				    plt.plot(xyz[:, 0], xyz[:, 1], xyz[:, 2], 'o', markerfacecolor=col,
-				             markeredgecolor='k', markersize=5)
+				    xyz = pts_xyz[class_member_mask]
+				    # covariance matrix for surface
+				    xvar = xyz[:, 0] - np.mean( xyz[:, 0])
+				    yvar = xyz[:, 1] - np.mean( xyz[:, 1])
+				    zvar = xyz[:, 2] - np.mean( xyz[:, 2])
+				    xyzvar = np.array([xvar, yvar, zvar]) / xyz.shape[0]
+				    covariance = np.dot(xyzvar, xyzvar.T)
+				    cvar_eig_min = np.amin(np.linalg.eigvals(covariance))
+				    if cvar_eig_min == 0:
+				    	pass
+				    else:
+						plt.plot(xyz[:, 0], xyz[:, 1], xyz[:, 2], 'o', markerfacecolor=col, markeredgecolor='k', markersize=2)
 
-				    xyz = pts_xyz[class_member_mask & ~core_samples_mask]
-				    plt.plot(xyz[:, 0], xyz[:, 1], xyz[:, 2], 'o', markerfacecolor=col,
-				             markeredgecolor='k', markersize=2)
-				
+				    # xyz = pts_xyz[class_member_mask & ~core_samples_mask]
+				    # plt.plot(xyz[:, 0], xyz[:, 1], xyz[:, 2], 'o', markerfacecolor=col,
+				    #          markeredgecolor='k', markersize=1)
 				plt.show()
-
-
+				
+		gc.collect()
 
 
 
