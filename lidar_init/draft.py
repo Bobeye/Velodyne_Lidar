@@ -10,9 +10,9 @@ import numpy as np
 import tensorflow as tf
 tf.python.control_flow_ops = tf
 
-batch_size = 100
+batch_size = 1000
 nb_classes = 10
-nb_epoch = 1000
+nb_epoch = 2000
 data_augmentation = True
 
 # input image dimensions
@@ -42,14 +42,14 @@ model.add(Activation('relu'))
 # model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.1))
 
-# model.add(Convolution2D(192, 3, 3, border_mode='same'))
-# model.add(Activation('relu'))
-# model.add(Convolution2D(192, 3, 3))
-# model.add(Activation('relu'))
-# model.add(Convolution2D(192, 3, 3))
-# model.add(Activation('relu'))
-# # model.add(MaxPooling2D(pool_size=(2, 2)))
-# model.add(Dropout(0.2))
+model.add(Convolution2D(192, 3, 3, border_mode='same'))
+model.add(Activation('relu'))
+model.add(Convolution2D(192, 3, 3))
+model.add(Activation('relu'))
+model.add(Convolution2D(192, 3, 3))
+model.add(Activation('relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.2))
 
 model.add(Flatten())
 model.add(Dense(512))
